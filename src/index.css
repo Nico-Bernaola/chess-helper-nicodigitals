@@ -664,7 +664,9 @@ code {
 .accuracy__breakdown-head,
 .accuracy__row {
   display: grid;
-  grid-template-columns: 1fr 44px 44px;
+  /* The two numeric columns must be wide enough for a truncated player name;
+     44px was narrower than the text, so names overflowed into each other. */
+  grid-template-columns: minmax(0, 1fr) 72px 72px;
   align-items: center;
   gap: 6px;
   font-size: 12px;
@@ -678,10 +680,37 @@ code {
   padding-bottom: 6px;
 }
 
+/* Every header cell truncates instead of spilling over its neighbour. */
+.accuracy__breakdown-head span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Player names read better in their own case, and the tighter tracking buys
+   enough room to show more of the name before the ellipsis. */
+.accuracy__breakdown-head span:not(:first-child) {
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  text-align: right;
+}
+
+.accuracy__head-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .accuracy__breakdown-head span:not(:first-child),
 .accuracy__count {
-  text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+.accuracy__count {
+  text-align: right;
 }
 
 .accuracy__row {
@@ -692,7 +721,15 @@ code {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   color: var(--text-muted);
+}
+
+.accuracy__row-label > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .accuracy__count {

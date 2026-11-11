@@ -30,8 +30,12 @@ export function AccuracyPanel({ white, black, whiteName, blackName }: AccuracyPa
       <div className="accuracy__breakdown">
         <div className="accuracy__breakdown-head">
           <span />
-          <span>{shortName(whiteName)}</span>
-          <span>{shortName(blackName)}</span>
+          <span className="accuracy__head-name" title={whiteName}>
+            {shortName(whiteName)}
+          </span>
+          <span className="accuracy__head-name" title={blackName}>
+            {shortName(blackName)}
+          </span>
         </div>
         {LABEL_ORDER.map((label) => (
           <div className="accuracy__row" key={label}>
@@ -59,6 +63,15 @@ function PlayerAccuracy({ summary, name, color }: { summary: AccuracySummary; na
   )
 }
 
+/**
+ * Compact name for the breakdown header.
+ *
+ * PGN tags use `Last, First`, so the surname alone identifies the player and
+ * fits the narrow count columns without an ellipsis. Anything else falls back
+ * to a truncated full name, which the CSS ellipsis then finishes.
+ */
 function shortName(name: string): string {
-  return name.length > 14 ? `${name.slice(0, 13)}…` : name
+  const surname = name.split(',')[0].trim()
+  const candidate = surname || name
+  return candidate.length > 14 ? `${candidate.slice(0, 13)}…` : candidate
 }
