@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
 import { Chessboard } from 'react-chessboard'
-import type { EngineScore, MoveReview, ParsedGame } from '../types'
+import type { MoveReview, ParsedGame } from '../types'
 import { LABEL_STYLES } from '../review/labels'
-import { formatScore } from '../review/winChance'
+import { evalForPlayer } from '../review/evalDisplay'
+import { displayName } from '../review/describeGame'
 
 interface BoardPanelProps {
   game: ParsedGame | null
@@ -61,17 +62,19 @@ export function BoardPanel({
   }, [lastMove, currentReview])
 
   const headers = game?.headers ?? {}
-  const whiteName = headers.White || 'White'
-  const blackName = headers.Black || 'Black'
-  const topPlayer = orientation === 'white' ? blackName : whiteName
-  const bottomPlayer = orientation === 'white' ? whiteName : blackName
+  const whiteName = displayName(headers.White, 'White')
+  const blackName = displayName(headers.Black, 'Black')
+
+  // Colour of the side rendered on each edge of the board.
+  const topColor = orientation === 'white' ? 'b' : 'w'
+  const bottomColor = orientation === 'white' ? 'w' : 'b'
 
   return (
     <section className="board-panel">
       <PlayerBar
-        name={topPlayer}
-        color={orientation === 'white' ? 'b' : 'w'}
-        score={evalFor(topPlayerColor(orientation, 'top'), currentReview)}
+        name={topColor === 'w' ? whiteName : blackName}
+        color={topColor}
+        score={evalForPlayer(topColor, currentReview)}
       />
 
       <div className="board-panel__board">
@@ -92,9 +95,9 @@ export function BoardPanel({
       </div>
 
       <PlayerBar
-        name={bottomPlayer}
-        color={orientation === 'white' ? 'w' : 'b'}
-        score={evalFor(topPlayerColor(orientation, 'bottom'), currentReview)}
+        name={bottomColor === 'w' ? whiteName : blackName}
+        color={bottomColor}
+        score={evalForPlayer(bottomColor, currentReview)}
       />
 
       <div className="board-panel__controls">
@@ -162,21 +165,4 @@ function PlayerBar({ name, color, score }: PlayerBarProps) {
       {score && <span className="player-bar__score">{score}</span>}
     </div>
   )
-}
-
-/** Recent evaluation for the side sitting on that edge of the board. */
-function evalFor(color: 'w' | 'b', review: MoveReview | null): string | null {
-  if (!review) return null
-  const score = color === 'w' ? review.whiteScoreAfter : invertForBlack(review.whiteScoreAfter)
-  return formatScore(score)
-}
-
-function topPlayerColor(orientation: 'white' | 'black', slot: 'top' | 'bottom'): 'w' | 'b' {
-  const whiteOnTop = orientation === 'black'
-  if (slot === 'top') return whiteOnTop ? 'w' : 'b'
-  return whiteOnTop ? 'b' : 'w'
-}
-
-function invertForBlack(score: EngineScore): EngineScore {
-  return { type: score.type, value: -score.value, bound: score.bound }
 }
