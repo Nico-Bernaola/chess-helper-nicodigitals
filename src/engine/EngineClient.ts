@@ -1,4 +1,4 @@
-import type { AnalysisResult, EngineInfo } from '../types'
+import type { AnalysisResult, EngineInfo, EngineScore } from '../types'
 import { parseBestMove, parseInfo } from './uci'
 
 export interface AnalyzeOptions {
@@ -18,23 +18,32 @@ export interface EngineLoadProgress {
   percent: number
 }
 
-interface PendingSearch {
-  resolve: (result: AnalysisResult) => void
-  reject: (error: Error) => void
+interface Search {
   fen: string
   lines: Map<number, EngineInfo>
-  bestMove: string | null
-  ponder: string | null
+  resolve: (result: AnalysisResult) => void
+  reject: (error: Error | DOMException) => void
   signal?: AbortSignal
-  abortHandler?: () => void
+  onAbort?: () => void
+  /** Set once the search has been settled; a late `bestmove` is then ignored. */
+  settled: boolean
+  /** True after a `stop` was sent and before its `bestmove` arrives. */
+  stopRequested: boolean
+  multipv: number
 }
 
 /**
- * Thin, promise-based wrapper around a Stockfish UCI Web Worker.
+ * Promise-based wrapper around a Stockfish UCI Web Worker.
  *
- * - One search runs at a time; concurrent calls are queued.
- * - `stop()` aborts the active search without killing the worker.
- * - The worker is created lazily and can be disposed after use.
+ * Concurrency model:
+ * - One search runs at a time; additional `analyze` calls are queued.
+ * - `stop()` aborts the active search but keeps the worker alive.
+ * - Every `go` is matched to exactly one `bestmove`. Searches are tracked in a
+ *   FIFO so a `bestmove` produced by a stopped search can never be mistaken for
+ *   the result of the next one.
+ *
+ * All communication stays inside the worker: the main thread only receives the
+ * already-parsed lines it asked for.
  */
 export class EngineClient {
   private worker: Worker | null = null
@@ -46,9 +55,12 @@ export class EngineClient {
   private readyReject: ((error: Error) => void) | null = null
   private ready = false
 
-  private current: PendingSearch | null = null
-  private queue: Array<() => void> = []
+  /** Searches with an unanswered `go`, oldest first. */
+  private inFlight: Search[] = []
+  /** Searches waiting for the engine to become free, with their rejectors. */
+  private queue: Array<{ start: () => void; reject: (error: Error | DOMException) => void }> = []
   private activeMultipv = 1
+  private disposed = false
 
   constructor(workerUrl?: string) {
     this.workerUrl = workerUrl ?? defaultWorkerUrl()
@@ -58,6 +70,10 @@ export class EngineClient {
   start(onProgress?: (progress: EngineLoadProgress) => void): Promise<void> {
     if (onProgress) this.onLoadProgress = onProgress
     if (this.readyPromise) return this.readyPromise
+    if (this.disposed) {
+      this.readyPromise = Promise.reject(new DOMException('Engine disposed', 'AbortError'))
+      return this.readyPromise
+    }
 
     this.readyPromise = new Promise<void>((resolve, reject) => {
       this.readyResolve = resolve
@@ -75,18 +91,17 @@ export class EngineClient {
     this.worker = worker
     worker.onmessage = (event: MessageEvent) => this.handleMessage(event.data)
     worker.onerror = (event) => {
-      const error = new Error(event.message || 'Stockfish worker failed to load')
       event.preventDefault?.()
+      const error = new Error(event.message || 'Stockfish worker failed to load')
       this.failReady(error)
-      this.failCurrent(error)
-      this.worker = null
+      this.failAllInFlight(error)
       worker.terminate()
+      this.worker = null
     }
 
-    // Real download progress is streamed by the engine through a dedicated
-    // MessagePort. It is best effort: on a fast cache hit the wasm may already
-    // be compiled before the port is wired, and the UI falls back to an
-    // indeterminate bar.
+    // Real download progress is streamed by the engine on a dedicated port.
+    // Best effort: on a cache hit the wasm may already be compiled before the
+    // port is wired, and the UI then simply keeps its indeterminate bar.
     if (typeof MessageChannel !== 'undefined') {
       const channel = new MessageChannel()
       channel.port1.onmessage = (event: MessageEvent) => {
@@ -121,7 +136,7 @@ export class EngineClient {
         return
       }
 
-      const run = () => {
+      const startSearch = () => {
         if (signal?.aborted) {
           reject(new DOMException('Analysis aborted', 'AbortError'))
           return
@@ -132,44 +147,53 @@ export class EngineClient {
           this.activeMultipv = multipv
         }
 
-        const pending: PendingSearch = {
-          resolve,
-          reject,
+        const search: Search = {
           fen,
           lines: new Map(),
-          bestMove: null,
-          ponder: null,
+          resolve,
+          reject,
           signal,
+          settled: false,
+          stopRequested: false,
+          multipv,
         }
 
         if (signal) {
-          pending.abortHandler = () => {
-            this.stop()
-            this.settle(pending, new DOMException('Analysis aborted', 'AbortError'))
-          }
-          signal.addEventListener('abort', pending.abortHandler, { once: true })
+          search.onAbort = () => this.abortSearch(search)
+          signal.addEventListener('abort', search.onAbort, { once: true })
         }
 
-        this.current = pending
+        this.inFlight.push(search)
         this.send(`position fen ${fen}`)
         this.send(movetimeMs ? `go movetime ${Math.round(movetimeMs)}` : `go depth ${depth}`)
       }
 
-      if (this.current) this.queue.push(run)
-      else run()
+      if (this.inFlight.length > 0) this.queue.push({ start: startSearch, reject })
+    else startSearch()
     })
   }
 
-  /** Requests the engine to abort the active search; queued searches continue. */
+  /** Asks the engine to abort the active search. The worker stays warm. */
   stop(): void {
-    if (this.current) this.send('stop')
+    const active = this.inFlight[0]
+    if (!active || active.settled || active.stopRequested) return
+
+    active.stopRequested = true
+    this.send('stop')
   }
 
-  /** Stops everything and terminates the worker. */
+  /** Terminates the worker and rejects everything outstanding. */
   dispose(): void {
+    this.disposed = true
+    const error = new DOMException('Engine disposed', 'AbortError')
+
+    // Queued searches never sent `go`, so they have no bestmove to await.
+    for (const item of this.queue) item.reject(error)
     this.queue = []
-    if (this.current) this.settle(this.current, new DOMException('Engine disposed', 'AbortError'))
-    this.failReady(new DOMException('Engine disposed', 'AbortError'))
+
+    this.failAllInFlight(error)
+    this.failReady(error as unknown as Error)
+
     this.worker?.terminate()
     this.worker = null
     this.ready = false
@@ -177,9 +201,14 @@ export class EngineClient {
 
   /** Resets engine state between games (clears hash/repetition bookkeeping). */
   newGame(): void {
+    if (this.inFlight.length > 0) return
     this.send('ucinewgame')
     this.send('isready')
   }
+
+  /* ---------------------------------------------------------------- *
+   * Internals                                                         *
+   * ---------------------------------------------------------------- */
 
   private handleMessage(data: unknown): void {
     if (typeof data !== 'string') {
@@ -196,63 +225,95 @@ export class EngineClient {
     }
 
     if (line === 'readyok') {
-      if (!this.ready) {
-        this.ready = true
-        this.readyResolve?.()
-      }
+      this.ready = true
+      this.readyResolve?.()
       return
     }
 
     const best = parseBestMove(line)
     if (best) {
-      const pending = this.current
-      if (!pending) return
-
-      const lines = [...pending.lines.values()].sort((a, b) => a.multipv - b.multipv)
-      pending.bestMove = best.bestMove
-      pending.ponder = best.ponder
-
-      this.current = null
-      const result: AnalysisResult = {
-        fen: pending.fen,
-        bestMove: best.bestMove,
-        ponder: best.ponder,
-        lines,
-        searchedDepth: lines.reduce((max, info) => Math.max(max, info.depth), 0),
-      }
-
-      if (pending.signal && pending.abortHandler) {
-        pending.signal.removeEventListener('abort', pending.abortHandler)
-      }
-      pending.resolve(result)
-      this.drainQueue()
+      this.handleBestMove(best.bestMove, best.ponder)
       return
     }
 
     const info = parseInfo(line)
-    if (!info || !this.current) return
+    const active = this.inFlight[0]
+    if (!info || !active || active.settled) return
 
     // Keep the deepest report per MultiPV slot; shallow ones are overwritten.
-    const previous = this.current.lines.get(info.multipv)
+    const previous = active.lines.get(info.multipv)
     if (!previous || info.depth >= previous.depth) {
-      this.current.lines.set(info.multipv, info)
+      active.lines.set(info.multipv, info)
     }
   }
 
-  private settle(pending: PendingSearch, error: Error | DOMException): void {
-    if (this.current === pending) this.current = null
-    if (pending.signal && pending.abortHandler) {
-      pending.signal.removeEventListener('abort', pending.abortHandler)
+  /** Consumes exactly one `bestmove`, whichever search produced it. */
+  private handleBestMove(bestMove: string | null, ponder: string | null): void {
+    const search = this.inFlight.shift()
+    if (!search) return
+
+    if (search.settled) {
+      // Result of a search that was aborted or replaced: discard, keep going.
+      this.drainQueue()
+      return
     }
-    pending.reject(error)
+
+    if (search.onAbort && search.signal) {
+      search.signal.removeEventListener('abort', search.onAbort)
+    }
+    search.settled = true
+
+    const lines = [...search.lines.values()].sort((a, b) => a.multipv - b.multipv)
+    search.resolve({
+      fen: search.fen,
+      bestMove,
+      ponder,
+      lines,
+      searchedDepth: lines.reduce((max, info) => Math.max(max, info.depth), 0),
+    })
+
     this.drainQueue()
   }
 
-  private failCurrent(error: Error): void {
-    if (this.current) this.settle(this.current, error)
+  /** Cancels a search, either because of its signal or an explicit stop. */
+  private abortSearch(search: Search): void {
+    if (search.settled) return
+
+    if (search.onAbort && search.signal) {
+      search.signal.removeEventListener('abort', search.onAbort)
+    }
+    search.settled = true
+    search.reject(new DOMException('Analysis aborted', 'AbortError'))
+
+    // A queued search never sent `go`, so there is no `bestmove` to wait for.
+    if (!this.inFlight.includes(search)) {
+      this.drainQueue()
+      return
+    }
+
+    // In flight: ask the engine to stop. The slot stays occupied until its
+    // `bestmove` arrives so the match stays one-to-one.
+    if (!search.stopRequested) {
+      search.stopRequested = true
+      this.send('stop')
+    }
   }
 
-  /** Rejects the handshake once, then resets so a later `start()` can retry. */
+  private failAllInFlight(error: Error): void {
+    const searches = this.inFlight
+    this.inFlight = []
+
+    for (const search of searches) {
+      if (search.onAbort && search.signal) {
+        search.signal.removeEventListener('abort', search.onAbort)
+      }
+      if (search.settled) continue
+      search.settled = true
+      search.reject(error)
+    }
+  }
+
+  /** Rejects the handshake once, then allows a later `start()` to retry. */
   private failReady(error: Error): void {
     this.readyReject?.(error)
     this.readyPromise = null
@@ -261,9 +322,11 @@ export class EngineClient {
     this.ready = false
   }
 
+  /** Starts the next queued search only once the engine has no pending `go`. */
   private drainQueue(): void {
+    if (this.inFlight.length > 0) return
     const next = this.queue.shift()
-    if (next) next()
+    if (next) next.start()
   }
 
   private send(command: string): void {
@@ -291,3 +354,6 @@ function toLoadProgress(data: unknown): EngineLoadProgress | null {
 function toError(value: unknown): Error {
   return value instanceof Error ? value : new Error(String(value))
 }
+
+/** Re-exported so consumers can type score objects without a second import. */
+export type { EngineScore }
