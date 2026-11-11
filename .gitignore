@@ -16,6 +16,9 @@ dist-ssr
 public/engine/stockfish-lite-single.js
 public/engine/stockfish-lite-single.wasm
 
+# Post-mortems internos: no forman parte del producto ni se publican
+docs/INCIDENTE-*.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
