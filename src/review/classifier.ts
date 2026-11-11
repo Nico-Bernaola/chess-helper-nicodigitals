@@ -129,11 +129,11 @@ interface LabelInput {
 export function pickLabel(input: LabelInput): MoveLabel {
   const { delta, isBestMove, winChanceBefore, winChanceAfter, sacrifice, move } = input
 
-  // Brilliant = a sound *piece* sacrifice that keeps a winning position and is
-  // also the engine's own choice. Pawn sacrifices are deliberately excluded:
-  // Chess.com reserves the label for material that really is a piece.
+  // Brilliant = a sound *piece* sacrifice that is also the engine's own choice.
+  // Pawn sacrifices are excluded: the label is reserved for real material.
   if (
     sacrifice.isSacrifice &&
+    isBestMove &&
     sacrifice.sacrificedPieceValue >= PIECE_VALUES.n &&
     sacrifice.materialGiven >= BRILLIANT_MIN_SACRIFICE &&
     winChanceAfter >= BRILLIANT_MIN_WIN_CHANCE &&
