@@ -40,16 +40,22 @@ export function MoveList({ reviews, selectedPly, onSelect }: MoveListProps) {
   return (
     <div className="move-list" ref={containerRef}>
       <div className="move-list__header">
-        <span>#</span>
+        <span className="move-list__number-head">#</span>
+        <span aria-hidden="true" />
         <span>White</span>
+        <span aria-hidden="true" />
         <span>Black</span>
+        <span aria-hidden="true" />
       </div>
 
       {rows.map((row) => (
         <div className="move-list__row" key={row.moveNumber}>
           <span className="move-list__number">{row.moveNumber}</span>
+          <span aria-hidden="true" />
           <MoveCell review={row.white} selectedPly={selectedPly} onSelect={onSelect} />
+          <span aria-hidden="true" />
           <MoveCell review={row.black} selectedPly={selectedPly} onSelect={onSelect} />
+          <span aria-hidden="true" />
         </div>
       ))}
     </div>

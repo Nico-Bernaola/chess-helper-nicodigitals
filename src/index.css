@@ -196,6 +196,32 @@ code {
   }
 }
 
+/* Very narrow phones: keep both move columns usable by shrinking the move
+   tracks and letting the SAN column stay just wide enough for a promotion. */
+@media (max-width: 420px) {
+  .move-list {
+    padding: 8px 6px;
+  }
+
+  .move-list__header,
+  .move-list__row {
+    grid-template-columns: minmax(6px, 1fr) 26px 98px minmax(6px, 1fr) 98px minmax(6px, 1fr);
+  }
+
+  .move-list__cell {
+    /* 56px SAN + 6 + 20 badge: still fits `exd8=Q+` (55px) at 13px mono. */
+    grid-template-columns: 56px 20px;
+    gap: 6px;
+    padding: 4px 5px;
+  }
+
+  .move-list__number,
+  .move-list__number-head {
+    padding-left: 6px;
+    padding-right: 0;
+  }
+}
+
 /* ------------------------------------------------------------------ *
  * Generic panel + buttons                                              *
  * ------------------------------------------------------------------ */
@@ -501,12 +527,24 @@ code {
   padding: 22px 16px;
 }
 
+/* The content is ~256px wide but the panel is ~580px, so ~325px is leftover.
+   Instead of dumping it all in the middle (which read as a broken table) the
+   grid has three flexible spacer tracks — before, between and after the two
+   move columns. With equal `1fr` values the leftover is divided in three
+   exact thirds, so the gap on the left, the gap between the columns and the
+   gap on the right all measure the same:
+     [ 1fr ] [ # gutter 32 ] [ White 108 ] [ 1fr ] [ Black 108 ] [ 1fr ]
+   The move number lives in the first flexible track and is left-aligned, so
+   it hugs the panel edge without moving White, Black or any of the three gaps.
+   The 32px track after it stays empty on purpose, so everything to its right
+   keeps its exact position. */
 .move-list__header,
 .move-list__row {
   display: grid;
-  grid-template-columns: 44px 1fr 1fr;
+  grid-template-columns:
+    minmax(16px, 1fr) 32px 108px minmax(16px, 1fr) 108px minmax(16px, 1fr);
   align-items: center;
-  gap: 4px;
+  row-gap: 4px;
 }
 
 .move-list__header {
@@ -518,7 +556,16 @@ code {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-dim);
-  padding: 4px 6px 8px;
+  /* No horizontal padding: the header is a separate grid container from the
+     rows, so any horizontal padding would shift its columns relative to them. */
+  padding: 4px 0 8px;
+}
+
+/* Captions sit over the start of the move text they label. */
+.move-list__header > span:nth-child(3),
+.move-list__header > span:nth-child(5) {
+  text-align: left;
+  padding-left: 8px;
 }
 
 .move-list__row {
@@ -533,14 +580,27 @@ code {
   font-family: var(--mono);
   font-size: 12px;
   color: var(--text-dim);
-  text-align: right;
-  padding-right: 8px;
+  /* The number occupies the first flexible track, so aligning it left pulls it
+     to the panel edge without moving White, Black or any of the three gaps. */
+  text-align: left;
+  padding-left: 10px;
+}
+
+/* Same treatment for the "#" caption so it sits above the numbers. */
+.move-list__number-head {
+  text-align: left;
+  padding-left: 10px;
 }
 
 .move-list__cell {
-  display: flex;
+  /* Badges must form a rail, so the SAN gets a fixed column instead of 1fr.
+     The cell is centred in its track: the content block keeps a predictable
+     width while the unused track space lands outside the cell, not inside it. */
+  display: grid;
+  grid-template-columns: 60px 24px;
+  justify-content: center;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   width: 100%;
   min-height: 30px;
   padding: 4px 8px;
@@ -561,10 +621,6 @@ code {
   border-color: rgba(138, 180, 248, 0.4);
 }
 
-.move-list__cell.is-pending .move-list__san {
-  opacity: 0.45;
-}
-
 .move-list__cell--empty {
   color: var(--text-dim);
   cursor: default;
@@ -572,11 +628,17 @@ code {
 }
 
 .move-list__san {
+  min-width: 0;
   font-family: var(--mono);
   font-size: 13px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* The badge occupies a fixed column, centred, so the column reads as a rail. */
+.move-list__cell .badge {
+  justify-self: center;
 }
 
 .badge {
