@@ -1,0 +1,33 @@
+{
+  "name": "chess-helper-nicodigitals",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "npm run engine:sync && vite",
+    "build": "npm run engine:sync && tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b",
+    "lint": "oxlint",
+    "test": "vitest run",
+    "engine:sync": "node scripts/sync-engine.mjs",
+    "postinstall": "node scripts/sync-engine.mjs"
+  },
+  "dependencies": {
+    "chess.js": "^1.4.0",
+    "react": "^19.3.1",
+    "react-chessboard": "^5.12.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "oxlint": "^1.90.0",
+    "stockfish": "^19.0.1",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.6",
+    "vitest": "^4.0.18"
+  }
+}
