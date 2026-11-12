@@ -83,22 +83,22 @@ export default function GameReview() {
   const busy = state.phase === 'loading-engine' || state.phase === 'analyzing'
 
   return (
-    <div className="app">
-      <header className="app__header">
-        <div className="app__brand">
-          <span className="app__logo" aria-hidden="true">
+    <div className="mx-auto flex min-h-screen max-w-[1380px] flex-col gap-[18px] px-[clamp(16px,3vw,32px)] pt-6 pb-10">
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <span className="grid size-12 place-items-center rounded-[14px] border border-[#33452a] bg-gradient-to-br from-[#2a3a23] to-[#17211a] text-[26px] text-accent" aria-hidden="true">
             ♞
           </span>
           <div>
-            <h1>Game Review</h1>
-            <p className="app__tagline">Local Stockfish WASM analysis · nothing leaves your browser</p>
+            <h1 className="text-[22px] tracking-[-0.02em]">Game Review</h1>
+            <p className="mt-0.5 text-[13px] text-text-muted">Local Stockfish WASM analysis · nothing leaves your browser</p>
           </div>
         </div>
 
-        <div className="app__controls">
-          <label className="depth">
+        <div className="flex items-center gap-2.5">
+          <label className="flex items-center gap-2 text-[13px] text-text-muted">
             Depth
-            <select value={depth} onChange={(event) => setDepth(Number(event.target.value))}>
+            <select className="cursor-pointer rounded-lg border border-border bg-bg-elevated px-2.5 py-[7px] font-[inherit] text-text disabled:cursor-not-allowed disabled:opacity-50" value={depth} onChange={(event) => setDepth(Number(event.target.value))}>
               {DEPTHS.map((value) => (
                 <option key={value} value={value}>
                   {value}
@@ -108,11 +108,11 @@ export default function GameReview() {
           </label>
 
           {busy ? (
-            <button type="button" className="btn btn--ghost" onClick={cancel}>
+            <button type="button" className="btn bg-transparent" onClick={cancel}>
               Stop
             </button>
           ) : (
-            <button type="button" className="btn btn--ghost" onClick={retry} disabled={!retry}>
+            <button type="button" className="btn bg-transparent" onClick={retry} disabled={!retry}>
               Re-run
             </button>
           )}
@@ -129,8 +129,8 @@ export default function GameReview() {
         onRetry={retry}
       />
 
-      <main className="layout">
-        <div className="layout__left">
+      <main className="grid grid-cols-1 [grid-template-areas:'board'_'side'_'input'] items-start gap-[18px] min-[981px]:grid-cols-[minmax(320px,520px)_minmax(0,1fr)] min-[981px]:[grid-template-areas:'board_side'_'input_side']">
+        <div className="[grid-area:board]">
           <BoardPanel
             game={game}
             fen={fen}
@@ -144,7 +144,7 @@ export default function GameReview() {
           />
         </div>
 
-        <div className="layout__right">
+        <div className="flex min-w-0 flex-col gap-3.5 [grid-area:side]">
           <EvalChart reviews={reviews} selectedPly={ply} onSelect={navigate} totalPlies={totalPlies} />
 
           {accuracy && (
@@ -159,15 +159,15 @@ export default function GameReview() {
           <MoveList reviews={reviews} selectedPly={ply} onSelect={navigate} />
         </div>
 
-        <div className="layout__input">
+        <div className="[grid-area:input]">
           <PgnInput game={game} onGame={loadGame} />
         </div>
       </main>
 
-      <footer className="app__footer">
+      <footer className="flex flex-wrap justify-between gap-3 border-t border-border pt-3.5 text-xs text-text-dim">
         <span>
           Engine: Stockfish 19 Lite (single-threaded WASM) · Win chance{' '}
-          <code>1 / (1 + 10^(-cp/400))</code>
+          <code className="font-mono text-[0.9em] text-text-muted">1 / (1 + 10^(-cp/400))</code>
         </span>
         <span>← → to navigate · Home/End to jump</span>
       </footer>
@@ -188,10 +188,10 @@ interface StatusBarProps {
 function StatusBar({ phase, progress, analysed, total, engineLoad, error, onRetry }: StatusBarProps) {
   if (error) {
     return (
-      <div className="status status--error" role="alert">
+      <div className="flex min-h-11 items-center gap-3.5 rounded-lg border border-[#fa412d]/45 bg-[#fa412d]/10 px-3.5 py-2.5 text-[13px] text-[#ffb3a9]" role="alert">
         <span>{error}</span>
         {onRetry && (
-          <button type="button" className="btn btn--ghost" onClick={onRetry}>
+          <button type="button" className="btn bg-transparent" onClick={onRetry}>
             Retry
           </button>
         )}
@@ -201,7 +201,7 @@ function StatusBar({ phase, progress, analysed, total, engineLoad, error, onRetr
 
   if (phase === 'loading-engine') {
     return (
-      <div className="status">
+      <div className="flex min-h-11 items-center gap-3.5 rounded-lg border border-border bg-bg-elevated px-3.5 py-2.5 text-[13px] text-text-muted">
         <span>Loading engine… {Math.round(engineLoad * 100)}%</span>
         <Progress value={engineLoad} />
       </div>
@@ -210,7 +210,7 @@ function StatusBar({ phase, progress, analysed, total, engineLoad, error, onRetr
 
   if (phase === 'analyzing') {
     return (
-      <div className="status">
+      <div className="flex min-h-11 items-center gap-3.5 rounded-lg border border-border bg-bg-elevated px-3.5 py-2.5 text-[13px] text-text-muted">
         <span>
           Analyzing {analysed} / {total} positions
         </span>
@@ -220,22 +220,22 @@ function StatusBar({ phase, progress, analysed, total, engineLoad, error, onRetr
   }
 
   if (phase === 'done') {
-    return <div className="status status--done">Analysis complete · {analysed} positions</div>
+    return <div className="flex min-h-11 items-center gap-3.5 rounded-lg border border-accent/40 bg-accent/8 px-3.5 py-2.5 text-[13px] text-[#c3e2a3]">Analysis complete · {analysed} positions</div>
   }
 
-  return <div className="status status--idle">Ready</div>
+  return <div className="flex min-h-11 items-center gap-3.5 rounded-lg border border-border bg-bg-elevated px-3.5 py-2.5 text-[13px] text-text-dim">Ready</div>
 }
 
 function Progress({ value }: { value: number }) {
   return (
     <span
-      className="progress"
+      className="h-1.5 min-w-[120px] flex-1 overflow-hidden rounded-full bg-[#232b35]"
       role="progressbar"
       aria-valuenow={Math.round(value * 100)}
       aria-valuemin={0}
       aria-valuemax={100}
     >
-      <span className="progress__fill" style={{ width: `${Math.round(value * 100)}%` }} />
+      <span className="block h-full rounded-[inherit] bg-gradient-to-r from-[#6f9e42] to-accent transition-[width] duration-150" style={{ width: `${Math.round(value * 100)}%` }} />
     </span>
   )
 }

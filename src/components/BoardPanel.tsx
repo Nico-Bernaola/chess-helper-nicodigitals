@@ -70,14 +70,14 @@ export function BoardPanel({
   const bottomColor = orientation === 'white' ? 'w' : 'b'
 
   return (
-    <section className="board-panel">
+    <section className="flex flex-col gap-2.5 rounded-xl border border-border bg-bg-panel p-3.5">
       <PlayerBar
         name={topColor === 'w' ? whiteName : blackName}
         color={topColor}
         score={evalForPlayer(topColor, currentReview)}
       />
 
-      <div className="board-panel__board">
+      <div className="relative aspect-square w-full">
         <Chessboard
           options={{
             position: fen,
@@ -100,17 +100,18 @@ export function BoardPanel({
         score={evalForPlayer(bottomColor, currentReview)}
       />
 
-      <div className="board-panel__controls">
-        <button type="button" onClick={() => onNavigate(0)} disabled={ply === 0} title="Start">
+      <div className="flex items-center gap-1.5">
+        <button className="grid h-[34px] w-[38px] cursor-pointer place-items-center rounded-lg border border-border bg-bg-elevated text-[13px] transition-colors duration-[120ms] hover:not-disabled:bg-[#212a34] disabled:cursor-not-allowed disabled:opacity-35" type="button" onClick={() => onNavigate(0)} disabled={ply === 0} title="Start">
           ⏮
         </button>
-        <button type="button" onClick={() => onNavigate(ply - 1)} disabled={ply === 0} title="Previous move">
+        <button className="grid h-[34px] w-[38px] cursor-pointer place-items-center rounded-lg border border-border bg-bg-elevated text-[13px] transition-colors duration-[120ms] hover:not-disabled:bg-[#212a34] disabled:cursor-not-allowed disabled:opacity-35" type="button" onClick={() => onNavigate(ply - 1)} disabled={ply === 0} title="Previous move">
           ◀
         </button>
-        <span className="board-panel__counter">
+        <span className="min-w-14 text-center font-mono text-xs text-text-muted">
           {ply} / {totalPlies}
         </span>
         <button
+          className="grid h-[34px] w-[38px] cursor-pointer place-items-center rounded-lg border border-border bg-bg-elevated text-[13px] transition-colors duration-[120ms] hover:not-disabled:bg-[#212a34] disabled:cursor-not-allowed disabled:opacity-35"
           type="button"
           onClick={() => onNavigate(ply + 1)}
           disabled={ply >= totalPlies}
@@ -118,27 +119,27 @@ export function BoardPanel({
         >
           ▶
         </button>
-        <button type="button" onClick={() => onNavigate(totalPlies)} disabled={ply >= totalPlies} title="End">
+        <button className="grid h-[34px] w-[38px] cursor-pointer place-items-center rounded-lg border border-border bg-bg-elevated text-[13px] transition-colors duration-[120ms] hover:not-disabled:bg-[#212a34] disabled:cursor-not-allowed disabled:opacity-35" type="button" onClick={() => onNavigate(totalPlies)} disabled={ply >= totalPlies} title="End">
           ⏭
         </button>
-        <button type="button" onClick={onFlip} title="Flip board" className="board-panel__flip">
+        <button className="ml-auto grid h-[34px] w-[38px] cursor-pointer place-items-center rounded-lg border border-border bg-bg-elevated text-[13px] transition-colors duration-[120ms] hover:not-disabled:bg-[#212a34] disabled:cursor-not-allowed disabled:opacity-35" type="button" onClick={onFlip} title="Flip board">
           ⇅
         </button>
       </div>
 
       {currentReview && (
-        <div className="board-panel__note" style={{ borderColor: LABEL_STYLES[currentReview.label].color }}>
-          <span className="board-panel__note-move">
+        <div className="flex flex-wrap items-center gap-2.5 rounded-lg border-l-[3px] bg-[#121820] px-3 py-[9px] text-[13px]" style={{ borderColor: LABEL_STYLES[currentReview.label].color }}>
+          <span className="font-mono font-semibold">
             {currentReview.moveNumber}
             {currentReview.color === 'w' ? '.' : '...'} {currentReview.san}
           </span>
           <span
-            className="board-panel__note-label"
+            className="font-semibold"
             style={{ color: LABEL_STYLES[currentReview.label].color }}
           >
             {LABEL_STYLES[currentReview.label].name}
           </span>
-          <span className="board-panel__note-detail">
+          <span className="ml-auto text-text-muted">
             {currentReview.isBestMove
               ? 'Engine top choice'
               : currentReview.bestMoveSan
@@ -159,10 +160,10 @@ interface PlayerBarProps {
 
 function PlayerBar({ name, color, score }: PlayerBarProps) {
   return (
-    <div className="player-bar">
-      <span className="player-bar__dot" style={{ backgroundColor: PLAYER_COLORS[color] }} />
-      <span className="player-bar__name">{name}</span>
-      {score && <span className="player-bar__score">{score}</span>}
+    <div className="flex min-h-[26px] items-center gap-[9px] px-1 py-0.5 text-sm">
+      <span className="size-[11px] shrink-0 rounded-[3px] border border-[#47535f]" style={{ backgroundColor: PLAYER_COLORS[color] }} />
+      <span className="truncate font-semibold">{name}</span>
+      {score && <span className="ml-auto rounded-md border border-border bg-[#10151b] px-[7px] py-0.5 font-mono text-xs text-text-muted">{score}</span>}
     </div>
   )
 }

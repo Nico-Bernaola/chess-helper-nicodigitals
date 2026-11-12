@@ -30,13 +30,13 @@ export function EvalChart({ reviews, selectedPly, onSelect, totalPlies }: EvalCh
   const selected = points.find((point) => point.ply === selectedPly)
 
   return (
-    <div className="chart">
+    <div className="rounded-xl border border-border bg-bg-panel p-3">
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         preserveAspectRatio="none"
         role="img"
         aria-label="Evaluation graph"
-        className="chart__svg"
+        className="block h-[200px] w-full rounded-lg"
       >
         <defs>
           <linearGradient id="chart-white" x1="0" y1="0" x2="0" y2="1">
@@ -91,11 +91,11 @@ export function EvalChart({ reviews, selectedPly, onSelect, totalPlies }: EvalCh
         ))}
       </svg>
 
-      <div className="chart__legend">
-        <span className="chart__legend-item">
+      <div className="mt-2 flex justify-between gap-2.5 px-0.5 text-[11px] text-text-dim">
+        <span className="inline-flex items-center gap-[5px]">
           <span aria-hidden="true">●</span> White
         </span>
-        <span className="chart__legend-item chart__legend-item--muted">
+        <span className="inline-flex items-center gap-[5px] text-text-dim">
           Click the graph to jump to a move
         </span>
       </div>

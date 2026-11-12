@@ -46,10 +46,10 @@ export function PgnInput({ game, onGame }: PgnInputProps) {
   }
 
   return (
-    <section className="panel pgn-input">
-      <header className="panel__header">
-        <h2>PGN</h2>
-        {summary && !parseError && <span className="pgn-input__summary">{summary}</span>}
+    <section className="panel">
+      <header className="panel-header">
+        <h2 className="panel-title">PGN</h2>
+        {summary && !parseError && <span className="text-right text-xs text-text-muted">{summary}</span>}
       </header>
 
       <textarea
@@ -71,24 +71,24 @@ export function PgnInput({ game, onGame }: PgnInputProps) {
         placeholder="Paste a PGN, drag a .pgn file here, or load the sample game."
         spellCheck={false}
         aria-invalid={parseError ? true : undefined}
-        className={dragging ? 'is-dragging' : undefined}
+        className={`min-h-[118px] w-full resize-y rounded-lg border bg-[#10151b] px-3 py-2.5 font-mono text-xs leading-[1.6] text-text transition-[border-color,background] duration-[120ms] focus:border-[#4c6b3a] focus:outline-none ${dragging ? 'border-accent bg-accent/7' : parseError ? 'border-[#fa412d]/55' : 'border-border'}`}
         rows={6}
       />
 
       {parseError && (
-        <p className="pgn-input__error" role="alert">
+        <p className="mt-2 text-xs text-[#ffb3a9]" role="alert">
           {parseError}
         </p>
       )}
 
-      <div className="row">
-        <button type="button" className="btn btn--primary" onClick={() => load(pgn)}>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button type="button" className="btn btn-primary" onClick={() => load(pgn)}>
           Analyze game
         </button>
         <button type="button" className="btn" onClick={() => load(SAMPLE_PGN)}>
           Load sample
         </button>
-        <label className="btn btn--ghost">
+        <label className="btn bg-transparent">
           Upload
           <input
             type="file"

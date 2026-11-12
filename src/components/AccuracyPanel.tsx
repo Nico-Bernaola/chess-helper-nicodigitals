@@ -17,34 +17,34 @@ interface AccuracyPanelProps {
  */
 export function AccuracyPanel({ white, black, whiteName, blackName }: AccuracyPanelProps) {
   return (
-    <section className="panel accuracy">
-      <header className="panel__header">
-        <h2>Accuracy</h2>
+    <section className="panel">
+      <header className="panel-header">
+        <h2 className="panel-title">Accuracy</h2>
       </header>
 
-      <div className="accuracy__scores">
+      <div className="mb-3.5 grid grid-cols-2 gap-2.5">
         <PlayerAccuracy summary={white} name={whiteName} color="w" />
         <PlayerAccuracy summary={black} name={blackName} color="b" />
       </div>
 
-      <div className="accuracy__breakdown">
-        <div className="accuracy__breakdown-head">
+      <div className="flex flex-col gap-0.5">
+        <div className="grid grid-cols-[minmax(0,1fr)_72px_72px] items-center gap-1.5 pb-1.5 text-[10px] uppercase tracking-[0.07em] text-text-dim [&>span:not(:first-child)]:text-right [&>span:not(:first-child)]:text-[11px] [&>span:not(:first-child)]:normal-case [&>span:not(:first-child)]:tracking-[0.01em] [&>span]:truncate">
           <span />
-          <span className="accuracy__head-name" title={whiteName}>
+          <span title={whiteName}>
             {shortName(whiteName)}
           </span>
-          <span className="accuracy__head-name" title={blackName}>
+          <span title={blackName}>
             {shortName(blackName)}
           </span>
         </div>
         {LABEL_ORDER.map((label) => (
-          <div className="accuracy__row" key={label}>
-            <span className="accuracy__row-label">
+          <div className="grid grid-cols-[minmax(0,1fr)_72px_72px] items-center gap-1.5 py-[3px] text-xs" key={label}>
+            <span className="flex min-w-0 items-center gap-2 text-text-muted [&>span:last-child]:truncate">
               <LabelBadge label={label} compact />
               <span>{LABEL_STYLES[label].name}</span>
             </span>
-            <span className="accuracy__count">{white.counts[label]}</span>
-            <span className="accuracy__count">{black.counts[label]}</span>
+            <span className="text-right font-mono tabular-nums text-text-muted">{white.counts[label]}</span>
+            <span className="text-right font-mono tabular-nums text-text-muted">{black.counts[label]}</span>
           </div>
         ))}
       </div>
@@ -54,11 +54,11 @@ export function AccuracyPanel({ white, black, whiteName, blackName }: AccuracyPa
 
 function PlayerAccuracy({ summary, name, color }: { summary: AccuracySummary; name: string; color: Color }) {
   return (
-    <div className="accuracy__player">
-      <span className={`accuracy__swatch accuracy__swatch--${color}`} />
-      <div className="accuracy__value">{summary.accuracy.toFixed(1)}</div>
-      <div className="accuracy__name">{name}</div>
-      <div className="accuracy__moves">{summary.moves} moves</div>
+    <div className="flex flex-col gap-[3px] rounded-lg border border-border bg-bg-elevated p-3">
+      <span className={`mb-1 h-[3px] w-[22px] rounded-sm ${color === 'w' ? 'bg-[#eef2f6]' : 'bg-[#3a424c]'}`} />
+      <div className="text-[26px] font-bold tracking-[-0.02em] tabular-nums">{summary.accuracy.toFixed(1)}</div>
+      <div className="truncate text-[13px] font-semibold">{name}</div>
+      <div className="text-[11px] text-text-dim">{summary.moves} moves</div>
     </div>
   )
 }

@@ -36,7 +36,7 @@ export function MoveList({ reviews, selectedPly, onSelect }: MoveListProps) {
     // fold, which yanks the board out of view on every Previous/Next press.
     const containerRect = container.getBoundingClientRect()
     const activeRect = active.getBoundingClientRect()
-    const header = container.querySelector<HTMLElement>('.move-list__header')
+    const header = container.querySelector<HTMLElement>('[data-move-header]')
     const visibleTop = containerRect.top + (header?.getBoundingClientRect().height ?? 0)
 
     if (activeRect.top < visibleTop) {
@@ -48,16 +48,16 @@ export function MoveList({ reviews, selectedPly, onSelect }: MoveListProps) {
 
   if (reviews.length === 0) {
     return (
-      <div className="move-list move-list--empty">
+      <div className="max-h-[460px] overflow-y-auto rounded-xl border border-border bg-bg-panel px-[22px] py-4 text-[13px] text-text-dim">
         <p>Moves appear here as the engine analyses the game.</p>
       </div>
     )
   }
 
   return (
-    <div className="move-list" ref={containerRef}>
-      <div className="move-list__header">
-        <span className="move-list__number-head">#</span>
+    <div className="max-h-[460px] overflow-y-auto rounded-xl border border-border bg-bg-panel px-1.5 py-2 min-[421px]:p-2.5" ref={containerRef}>
+      <div data-move-header className="move-grid sticky top-0 z-1 bg-bg-panel pb-2 pt-1 text-[11px] uppercase tracking-[0.08em] text-text-dim [&>span:nth-child(3)]:pl-2 [&>span:nth-child(5)]:pl-2">
+        <span className="pl-1.5 pr-0 text-left min-[421px]:pl-2.5">#</span>
         <span aria-hidden="true" />
         <span>White</span>
         <span aria-hidden="true" />
@@ -66,8 +66,8 @@ export function MoveList({ reviews, selectedPly, onSelect }: MoveListProps) {
       </div>
 
       {rows.map((row) => (
-        <div className="move-list__row" key={row.moveNumber}>
-          <span className="move-list__number">{row.moveNumber}</span>
+        <div className="move-grid rounded-lg hover:bg-white/2" key={row.moveNumber}>
+          <span className="pl-1.5 pr-0 text-left font-mono text-xs text-text-dim min-[421px]:pl-2.5">{row.moveNumber}</span>
           <span aria-hidden="true" />
           <MoveCell review={row.white} selectedPly={selectedPly} onSelect={onSelect} />
           <span aria-hidden="true" />
@@ -86,7 +86,7 @@ interface MoveCellProps {
 }
 
 function MoveCell({ review, selectedPly, onSelect }: MoveCellProps) {
-  if (!review) return <span className="move-list__cell move-list__cell--empty">·</span>
+  if (!review) return <span className="move-cell cursor-default pl-[11px] text-text-dim">·</span>
 
   const active = selectedPly === review.ply + 1
   const style = LABEL_STYLES[review.label]
@@ -94,12 +94,12 @@ function MoveCell({ review, selectedPly, onSelect }: MoveCellProps) {
   return (
     <button
       type="button"
-      className={`move-list__cell${active ? ' is-active' : ''}`}
+      className={`move-cell ${active ? 'border-[#8ab4f8]/40 bg-[#8ab4f8]/14' : ''}`}
       onClick={() => onSelect(review.ply + 1)}
       data-active={active}
       title={`${review.san} · ${style.name} · win chance ${Math.round(review.winChanceAfter * 100)}%`}
     >
-      <span className="move-list__san">{review.san}</span>
+      <span className="min-w-0 truncate font-mono text-[13px]">{review.san}</span>
       <LabelBadge label={review.label} />
     </button>
   )
@@ -109,7 +109,7 @@ export function LabelBadge({ label, compact = false }: { label: MoveLabel; compa
   const style = LABEL_STYLES[label]
   return (
     <span
-      className={`badge${compact ? ' badge--compact' : ''}`}
+      className={`badge justify-self-center ${compact ? 'h-[18px] min-w-[18px] text-[9px]' : ''}`}
       style={{ backgroundColor: style.color, color: style.textColor }}
       aria-label={style.name}
       title={style.description}

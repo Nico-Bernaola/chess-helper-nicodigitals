@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
@@ -5,7 +6,7 @@ import { defineConfig } from 'vite'
 // same build works on GitHub Pages, Netlify, Vercel or a plain file server.
 export default defineConfig({
   base: './',
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   build: {
     target: 'es2022',
     assetsInlineLimit: 0,
