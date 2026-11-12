@@ -164,12 +164,15 @@ export default function GameReview() {
         </div>
       </main>
 
-      <footer className="flex flex-wrap justify-between gap-3 border-t border-border pt-3.5 text-xs text-text-dim">
-        <span>
+      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3.5 text-xs text-text-dim">
+        <span className="flex-1 text-left">
           Engine: Stockfish 19 Lite (single-threaded WASM) · Win chance{' '}
           <code className="font-mono text-[0.9em] text-text-muted">1 / (1 + 10^(-cp/400))</code>
         </span>
-        <span>← → to navigate · Home/End to jump</span>
+        <span className="flex-1 text-center">Built by Nico Bernaola</span>
+        <span className="flex-1 text-right">
+          ← → to navigate · Home/End to jump
+        </span>
       </footer>
     </div>
   )
