@@ -25,8 +25,25 @@ export function MoveList({ reviews, selectedPly, onSelect }: MoveListProps) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const active = containerRef.current?.querySelector<HTMLElement>('[data-active="true"]')
-    active?.scrollIntoView({ block: 'nearest' })
+    const container = containerRef.current
+    if (!container) return
+
+    const active = container.querySelector<HTMLElement>('[data-active="true"]')
+    if (!active) return
+
+    // Scroll only this container, never the page. `scrollIntoView` bubbles up
+    // and would drag the window along with it whenever the list sits below the
+    // fold, which yanks the board out of view on every Previous/Next press.
+    const containerRect = container.getBoundingClientRect()
+    const activeRect = active.getBoundingClientRect()
+    const header = container.querySelector<HTMLElement>('.move-list__header')
+    const visibleTop = containerRect.top + (header?.getBoundingClientRect().height ?? 0)
+
+    if (activeRect.top < visibleTop) {
+      container.scrollTop -= visibleTop - activeRect.top
+    } else if (activeRect.bottom > containerRect.bottom) {
+      container.scrollTop += activeRect.bottom - containerRect.bottom
+    }
   }, [selectedPly])
 
   if (reviews.length === 0) {
