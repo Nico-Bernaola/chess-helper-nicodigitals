@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import { BoardPanel } from './components/BoardPanel'
 import { EvalChart } from './components/EvalChart'
 import { MoveList } from './components/MoveList'
@@ -32,6 +33,11 @@ export default function GameReview() {
   const [ply, setPly] = useState(0)
   const [orientation, setOrientation] = useState<'white' | 'black'>('white')
   const [depth, setDepth] = useState(14)
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ eval: true })
+
+  const toggleSection = useCallback((id: string) => {
+    setOpenSections((current) => ({ ...current, [id]: !current[id] }))
+  }, [])
 
   const { state, reviews, accuracy, retry, cancel } = useGameReview(game, { depth })
 
@@ -129,7 +135,7 @@ export default function GameReview() {
         onRetry={retry}
       />
 
-      <main className="grid grid-cols-1 [grid-template-areas:'board'_'side'_'input'] items-start gap-[18px] min-[981px]:grid-cols-[minmax(320px,520px)_minmax(0,1fr)] min-[981px]:[grid-template-areas:'board_side'_'input_side']">
+      <main className="grid grid-cols-1 [grid-template-areas:'board'_'side'_'input'] items-start gap-[18px] min-[981px]:grid-cols-[minmax(320px,520px)_minmax(0,1fr)] min-[981px]:[grid-template-areas:'board_side'_'input_input']">
         <div className="[grid-area:board]">
           <BoardPanel
             game={game}
@@ -144,19 +150,27 @@ export default function GameReview() {
           />
         </div>
 
-        <div className="flex min-w-0 flex-col gap-3.5 [grid-area:side]">
-          <EvalChart reviews={reviews} selectedPly={ply} onSelect={navigate} totalPlies={totalPlies} />
+        <div className="min-w-0 self-stretch [grid-area:side] min-[981px]:relative" id="right-panel">
+          <div className="flex min-w-0 flex-col gap-3.5 min-[981px]:absolute min-[981px]:inset-0 min-[981px]:overflow-y-auto">
+          <AccordionSection id="eval" title="Evaluation" open={openSections.eval ?? false} onToggle={toggleSection}>
+            <EvalChart reviews={reviews} selectedPly={ply} onSelect={navigate} totalPlies={totalPlies} />
+          </AccordionSection>
 
           {accuracy && (
-            <AccuracyPanel
-              white={accuracy.w}
-              black={accuracy.b}
-              whiteName={whiteName}
-              blackName={blackName}
-            />
+            <AccordionSection id="accuracy" title="Accuracy" open={openSections.accuracy ?? false} onToggle={toggleSection}>
+              <AccuracyPanel
+                white={accuracy.w}
+                black={accuracy.b}
+                whiteName={whiteName}
+                blackName={blackName}
+              />
+            </AccordionSection>
           )}
 
-          <MoveList reviews={reviews} selectedPly={ply} onSelect={navigate} />
+          <AccordionSection id="moves" title="Moves" open={openSections.moves ?? false} onToggle={toggleSection}>
+            <MoveList reviews={reviews} selectedPly={ply} onSelect={navigate} />
+          </AccordionSection>
+          </div>
         </div>
 
         <div className="[grid-area:input]">
@@ -175,6 +189,37 @@ export default function GameReview() {
         </span>
       </footer>
     </div>
+  )
+}
+
+interface AccordionSectionProps {
+  id: string
+  title: string
+  open: boolean
+  onToggle: (id: string) => void
+  children: ReactNode
+}
+
+function AccordionSection({ id, title, open, onToggle, children }: AccordionSectionProps) {
+  return (
+    <section className="shrink-0">
+      <h2>
+        <button
+          type="button"
+          id={`${id}-header`}
+          className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-border bg-bg-elevated px-3.5 py-2.5 text-left text-[13px] font-medium text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          aria-expanded={open}
+          aria-controls={`${id}-content`}
+          onClick={() => onToggle(id)}
+        >
+          {title}
+          <span aria-hidden="true" className={`transition-transform ${open ? 'rotate-180' : ''}`}>⌄</span>
+        </button>
+      </h2>
+      <div id={`${id}-content`} role="region" aria-labelledby={`${id}-header`} hidden={!open} className="mt-3.5">
+        {children}
+      </div>
+    </section>
   )
 }
 
