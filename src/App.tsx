@@ -33,7 +33,7 @@ export default function GameReview() {
   const [ply, setPly] = useState(0)
   const [orientation, setOrientation] = useState<'white' | 'black'>('white')
   const [depth, setDepth] = useState(14)
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ eval: true })
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ eval: true, accuracy: true })
 
   const toggleSection = useCallback((id: string) => {
     setOpenSections((current) => ({ ...current, [id]: !current[id] }))
@@ -135,7 +135,7 @@ export default function GameReview() {
         onRetry={retry}
       />
 
-      <main className="grid grid-cols-1 [grid-template-areas:'board'_'side'_'input'] items-start gap-[18px] min-[981px]:grid-cols-[minmax(320px,520px)_minmax(0,1fr)] min-[981px]:[grid-template-areas:'board_side'_'input_input']">
+      <main className="grid grid-cols-1 [grid-template-areas:'board'_'side'] items-start gap-[18px] min-[981px]:grid-cols-[minmax(320px,520px)_minmax(0,1fr)] min-[981px]:[grid-template-areas:'board_side']">
         <div className="[grid-area:board]">
           <BoardPanel
             game={game}
@@ -144,6 +144,7 @@ export default function GameReview() {
             currentReview={currentReview}
             orientation={orientation}
             onFlip={() => setOrientation((value) => (value === 'white' ? 'black' : 'white'))}
+            pgnInput={<PgnInput game={game} onGame={loadGame} />}
             onNavigate={navigate}
             totalPlies={totalPlies}
             ply={ply}
@@ -171,10 +172,6 @@ export default function GameReview() {
             <MoveList reviews={reviews} selectedPly={ply} onSelect={navigate} />
           </AccordionSection>
           </div>
-        </div>
-
-        <div className="[grid-area:input]">
-          <PgnInput game={game} onGame={loadGame} />
         </div>
       </main>
 

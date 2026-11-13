@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import type { ReactNode } from 'react'
 import { Chessboard } from 'react-chessboard'
 import type { MoveReview, ParsedGame } from '../types'
 import { LABEL_STYLES } from '../review/labels'
@@ -15,6 +16,7 @@ interface BoardPanelProps {
   currentReview: MoveReview | null
   orientation: 'white' | 'black'
   onFlip: () => void
+  pgnInput: ReactNode
   onNavigate: (ply: number) => void
   totalPlies: number
   /** Selected ply, 0-based index into `game.positions`. */
@@ -39,6 +41,7 @@ export function BoardPanel({
   currentReview,
   orientation,
   onFlip,
+  pgnInput,
   onNavigate,
   totalPlies,
   ply,
@@ -122,7 +125,8 @@ export function BoardPanel({
         <button className="grid h-[34px] w-[38px] cursor-pointer place-items-center rounded-lg border border-border bg-bg-elevated text-[13px] transition-colors duration-[120ms] hover:not-disabled:bg-[#212a34] disabled:cursor-not-allowed disabled:opacity-35" type="button" onClick={() => onNavigate(totalPlies)} disabled={ply >= totalPlies} title="End">
           ⏭
         </button>
-        <button className="ml-auto grid h-[34px] w-[38px] cursor-pointer place-items-center rounded-lg border border-border bg-bg-elevated text-[13px] transition-colors duration-[120ms] hover:not-disabled:bg-[#212a34] disabled:cursor-not-allowed disabled:opacity-35" type="button" onClick={onFlip} title="Flip board">
+        {pgnInput}
+        <button className="grid h-[34px] w-[38px] cursor-pointer place-items-center rounded-lg border border-border bg-bg-elevated text-[13px] transition-colors duration-[120ms] hover:not-disabled:bg-[#212a34] disabled:cursor-not-allowed disabled:opacity-35" type="button" onClick={onFlip} title="Flip board">
           ⇅
         </button>
       </div>
